@@ -1,5 +1,11 @@
-import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
-import { GROUPING_VALUES, useOrderBookStore, type Grouping } from '../stores/order-book.store';
+import { useEffect, useMemo, useRef, useCallback } from 'react';
+import {
+  GROUPING_VALUES,
+  ROWS_PER_PAGE_OPTIONS,
+  useOrderBookStore,
+  type Grouping,
+  type RowsPerPage,
+} from '../stores/order-book.store';
 import { OrderRow } from './OrderRow';
 import { CanvasDepthChart } from './DepthChartCanvas';
 import '../styles/OrderBook.css';
@@ -9,19 +15,29 @@ interface OrderBookProps {
   className?: string;
 }
 
-const ROWS_PER_PAGE_OPTIONS = [10, 20, 30, 50] as const;
-
 export const OrderBook = ({ className }: OrderBookProps) => {
-  const { bids, asks, grouping, setGrouping, connect, disconnect } = useOrderBookStore();
-  const [rowsPerPage, setRowsPerPage] = useState<number>(20);
+  const {
+    bids,
+    asks,
+    grouping,
+    rowsPerPage,
+    isLoading,
+    setGrouping,
+    setRowsPerPage,
+    connect,
+    disconnect,
+  } = useOrderBookStore();
+
   const bidsColumnRef = useRef<HTMLDivElement>(null);
   const asksColumnRef = useRef<HTMLDivElement>(null);
-  const connectTimerRef = useRef<number | null>(null);
   const isInitializedRef = useRef(false);
 
-  const handleRowsChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    setRowsPerPage(Number(e.target.value));
-  }, []);
+  const handleRowsChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      setRowsPerPage(Number(e.target.value) as RowsPerPage);
+    },
+    [setRowsPerPage],
+  );
 
   const handleGroupingClick = useCallback(
     (value: Grouping) => () => {
@@ -32,22 +48,15 @@ export const OrderBook = ({ className }: OrderBookProps) => {
 
   useEffect(() => {
     let isConnected = true;
-    const initConnection = () => {
-      if (!isConnected || isInitializedRef.current) return;
-      connect();
-      isInitializedRef.current = true;
-    };
-    if (connectTimerRef.current) clearTimeout(connectTimerRef.current);
-    if (!isInitializedRef.current) {
-      connectTimerRef.current = window.setTimeout(initConnection, 500);
-    }
-
+    const timerId = setTimeout(() => {
+      if (isConnected && !isInitializedRef.current) {
+        connect();
+        isInitializedRef.current = true;
+      }
+    }, 100);
     return () => {
       isConnected = false;
-      if (connectTimerRef.current) {
-        clearTimeout(connectTimerRef.current);
-        connectTimerRef.current = null;
-      }
+      clearTimeout(timerId);
       if (isInitializedRef.current) {
         disconnect();
         isInitializedRef.current = false;
@@ -55,9 +64,14 @@ export const OrderBook = ({ className }: OrderBookProps) => {
     };
   }, [connect, disconnect]);
 
-  const groupedBids = useMemo(() => groupOrders(bids, grouping, true), [bids, grouping]);
-  const groupedAsks = useMemo(() => groupOrders(asks, grouping, false), [asks, grouping]);
-
+  const groupedBids = useMemo(
+    () => groupOrders(bids, grouping, true, rowsPerPage),
+    [bids, grouping, rowsPerPage],
+  );
+  const groupedAsks = useMemo(
+    () => groupOrders(asks, grouping, false, rowsPerPage),
+    [asks, grouping, rowsPerPage],
+  );
   const limitedBids = useMemo(() => groupedBids.slice(0, rowsPerPage), [groupedBids, rowsPerPage]);
   const limitedAsks = useMemo(() => groupedAsks.slice(0, rowsPerPage), [groupedAsks, rowsPerPage]);
 
@@ -69,6 +83,47 @@ export const OrderBook = ({ className }: OrderBookProps) => {
     () => limitedAsks.reduce((sum, o) => sum + o.size, 0),
     [limitedAsks],
   );
+
+  if (isLoading) {
+    return (
+      <div className={`wrapper ${className || ''}`}>
+        <div className="header">
+          <div className="header-left">
+            <h2>Crypto Order Book</h2>
+          </div>
+        </div>
+
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p className="loading-text">Connecting to order book...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (bids.length === 0 && asks.length === 0) {
+    return (
+      <div className={`wrapper ${className || ''}`}>
+        <div className="header">
+          <div className="header-left">
+            <h2>Crypto Order Book</h2>
+          </div>
+        </div>
+
+        <div className="error-container">
+          <p className="error-text">No data available. Trying to reconnect...</p>
+          <button
+            className="reconnect-btn"
+            onClick={() => {
+              disconnect();
+              setTimeout(() => connect(), 100);
+            }}>
+            Reconnect
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`wrapper ${className || ''}`}>

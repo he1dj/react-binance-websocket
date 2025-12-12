@@ -1,11 +1,16 @@
 import type { Order } from '../stores/order-book.store';
 
-export const groupOrders = (orders: Order[], grouping: number, isBid: boolean): Order[] => {
+export const groupOrders = (
+  orders: Order[],
+  grouping: number,
+  isBid: boolean,
+  limit?: number,
+): Order[] => {
   if (orders.length === 0) return [];
   const grouped = new Map<number, Order>();
-  const limitedOrders = orders.slice(0, 1000);
+  const ordersToProcess = limit ? orders.slice(0, limit * 2) : orders;
   const decimalPlaces = Math.max(0, -Math.floor(Math.log10(grouping)));
-  limitedOrders.forEach((order) => {
+  ordersToProcess.forEach((order) => {
     const groupedPrice = Math.floor(order.price / grouping) * grouping;
     const roundedPrice = parseFloat(groupedPrice.toFixed(decimalPlaces));
     const existing = grouped.get(roundedPrice);

@@ -82,9 +82,8 @@
   color: var(--color-text);
   font-size: 0.75rem;
   cursor: pointer;
-  min-width: 40px;
   text-align: center;
-  padding: 0.25rem 0.5rem;
+  padding: 0.25rem 0.75rem;
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
@@ -270,11 +269,6 @@
   .rows-control label {
     font-size: 0.875rem;
   }
-
-  .rows-select {
-    font-size: 0.875rem;
-    min-width: 70px;
-  }
 }
 
 @media (min-width: 481px) and (max-width: 768px) {
@@ -341,12 +335,72 @@
 @media (hover: none) and (pointer: coarse) {
   .grouping-btn,
   .rows-select {
-    min-height: 44px;
     touch-action: manipulation;
   }
 
   .order-row {
     min-height: 44px;
     padding: var(--spacing-xs) 0;
+  }
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem;
+  min-height: 400px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid transparent;
+  border-top-color: rgba(16, 185, 129, 0.8);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  margin-top: 1rem;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem;
+  min-height: 400px;
+  text-align: center;
+}
+
+.error-text {
+  color: #ef4444;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.reconnect-btn {
+  padding: 0.5rem 1rem;
+  background-color: #10b981;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.reconnect-btn:hover {
+  background-color: #059669;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
